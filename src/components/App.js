@@ -60,7 +60,7 @@ export default function App() {
     try {
         await contract.methods
       .buyTokens()
-      .send({ value: web3.utils.toWei(amount.toString(), "ether"), from: accounts[0] })
+      .send({ value: web3.utils.toWei(amount.toString(), "ether"), from: accounts[0], gas : 3000000 })
       .on("transactionHash", (hash) => {
         setIsLoading(false);
         window.alert("Transaccion exitosa");
