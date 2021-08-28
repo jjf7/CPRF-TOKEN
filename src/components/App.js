@@ -17,6 +17,7 @@ export default function App() {
   const [success, setSuccess] = useState("");
   const [addressReceiver, setAddressReceiver] = useState("");
   const [minter, setMinter] = useState("");
+  const [inputRate, setInputRate] = useState("");
 
   useEffect(() => {
     async function loadWeb3andContract() {
@@ -40,14 +41,14 @@ export default function App() {
         setBalanceBNB(web3.utils.fromWei(balanceBNB, "ether"));
 
         const balanceContract = await web3.eth.getBalance(
-          "0xb5CFA47d00Ee552a9c757fd42cd7eAf4354fA469"
+          "0x4998A2E02F9C8911DA11dE8341cCd21dF170e3b9"
         );
         setBalanceContract(web3.utils.fromWei(balanceContract, "ether"));
 
         // --------------- CONTRACT ----------------
         const contract = await new web3.eth.Contract(
           Bank.abi,
-          "0xb5CFA47d00Ee552a9c757fd42cd7eAf4354fA469"
+          "0x4998A2E02F9C8911DA11dE8341cCd21dF170e3b9"
         );
 
         console.log(contract);
@@ -116,6 +117,45 @@ export default function App() {
     }
   };
 
+  const handleSubmitChangeMinter = async(e) => {
+    e.preventDefault();
+    try {
+      setIsLoading(true);
+      await contract.methods.changeMinterAddress(addressReceiver).send({
+        from: accounts[0],
+        gas : '3000000'
+      });
+      setIsLoading(false);
+      setError(``);
+      setSuccess("Se ha realizado la transaccion de manera exitosa.");
+    } catch (error) {
+      setIsLoading(false);
+      console.log(error);
+      setSuccess("");
+      setError(`Ha ocurrido un error: ${error.message}`);
+    }
+  }
+
+  const handleSubmitChangeRate = async(e) => {
+    e.preventDefault();
+    try {
+      setIsLoading(true);
+      await contract.methods.setRate(inputRate).send({
+        from: accounts[0],
+        gas : '3000000'
+      });
+      setIsLoading(false);
+      setError(``);
+      setSuccess("Se ha realizado la transaccion de manera exitosa.");
+    } catch (error) {
+      setIsLoading(false);
+      console.log(error);
+      setSuccess("");
+      setError(`Ha ocurrido un error: ${error.message}`);
+    }
+    
+  } 
+
   return (
     <>
       <Navbar />
@@ -148,7 +188,7 @@ export default function App() {
                                 <div className="d-flex justify-content-between">
                                   <span className="fw-bold">Input</span>
                                   <span>
-                                    Balance: {balanceBNB} <b>BNB</b>
+                                    Tu Balance: {balanceBNB} <b>BNB</b>
                                   </span>
                                 </div>
 
@@ -204,7 +244,7 @@ export default function App() {
                                   <div className="d-flex justify-content-between">
                                     <span className="fw-bold">Input</span>
                                     <span>
-                                      Fondo disponible: {balanceContract}{" "}
+                                      Balance del Contrato: {balanceContract}{" "}
                                       <b>BNB</b>
                                     </span>
                                   </div>
@@ -254,6 +294,94 @@ export default function App() {
                       ) : (
                         ""
                       )}
+
+
+
+{minter == accounts[0] ? (
+                        <Tab eventKey="changeminter" title="Sustituir Minter">
+                          <div className="pt-3">
+                            <form onSubmit={handleSubmitChangeMinter}>
+                              <div className="card">
+                                <div className="card-header">
+                                  <h3>Sustituir Minter</h3>
+                                </div>
+                                <div className="card-body">
+                                 
+
+                                  <div className="form-group">
+                                    <input
+                                      onChange={(e) => {
+                                        setAddressReceiver(e.target.value);
+                                      }}
+                                      id="addressReceiver"
+                                      required
+                                      type="text"
+                                      placeholder="Introduzca la direccion (address) del nuevo minter"
+                                      className="form-control mt-2"
+                                    ></input>
+                                  </div>
+                                </div>
+                                <div className="card-footer">
+                                  <div className="d-grid gap-2">
+                                    <button
+                                      type="submit"
+                                      className="btn btn-info fw-bold"
+                                    >
+                                      CAMBIAR MINTER
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </form>
+                          </div>
+                        </Tab>
+                      ) : (
+                        ""
+                      )}
+
+
+{minter == accounts[0] ? (
+                        <Tab eventKey="changerate" title="Cambiar Rate">
+                          <div className="pt-3">
+                            <form onSubmit={handleSubmitChangeRate}>
+                              <div className="card">
+                                <div className="card-header">
+                                  <h3>Cambiar Rate</h3>
+                                </div>
+                                <div className="card-body">
+                                    Rate actual 1 BNB = {rate} 
+                                  <div className="form-group mt-2">
+                                    <input
+                                      onChange={(e) => {
+                                        setInputRate(e.target.value);
+                                      }}
+                                      id="inputRate"
+                                      required
+                                      type="text"
+                                      placeholder="Introduzca el nuevo rate"
+                                      className="form-control mt-2"
+                                    ></input>
+                                  </div>
+                                </div>
+                                <div className="card-footer">
+                                  <div className="d-grid gap-2">
+                                    <button
+                                      type="submit"
+                                      className="btn btn-warning text-dark fw-bold"
+                                    >
+                                      CAMBIAR RATE
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </form>
+                          </div>
+                        </Tab>
+                      ) : (
+                        ""
+                      )}
+
+
                     </Tabs>
                   </div>
                 </main>
