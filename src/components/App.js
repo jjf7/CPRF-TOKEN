@@ -85,10 +85,12 @@ export default function App() {
         gas: 3000000,
       });
       setIsLoading(false);
+      setError(``);
       setSuccess("Se ha realizado la transaccion de manera exitosa.");
     } catch (error) {
       setIsLoading(false);
       console.log(error);
+      setSuccess("");
       setError(`Ha ocurrido un error: ${error.message}`);
     }
   };
@@ -104,10 +106,12 @@ export default function App() {
       });
 
       setIsLoading(false);
+      setError(``);
       setSuccess("Se ha realizado la transaccion de manera exitosa.");
     } catch (error) {
       setIsLoading(false);
       console.log(error);
+      setSuccess("");
       setError(`Ha ocurrido un error: ${error.message}`);
     }
   };
