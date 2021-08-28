@@ -19,6 +19,7 @@ module.exports = {
       confirmations: 10,
       timeoutBlocks: 200,
       skipDryRun: true,
+      from: "0xf1dC223411e17B937F5e7C55dD6e1eE58b6e0B15"
     },
     bsc: {
       provider: () =>

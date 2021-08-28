@@ -40,15 +40,18 @@ export default function App() {
         console.log("balanceBNB", balanceBNB);
         setBalanceBNB(web3.utils.fromWei(balanceBNB, "ether"));
 
+        const networkId = await web3.eth.net.getId();
+        const networkData = Bank.networks[networkId];
+
         const balanceContract = await web3.eth.getBalance(
-          "0x4998A2E02F9C8911DA11dE8341cCd21dF170e3b9"
+          networkData.address
         );
         setBalanceContract(web3.utils.fromWei(balanceContract, "ether"));
 
         // --------------- CONTRACT ----------------
         const contract = await new web3.eth.Contract(
           Bank.abi,
-          "0x4998A2E02F9C8911DA11dE8341cCd21dF170e3b9"
+          networkData.address
         );
 
         console.log(contract);
