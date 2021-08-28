@@ -1,3 +1,4 @@
+require("dotenv").config();
 const HDWalletProvider = require("@truffle/hdwallet-provider");
 const fs = require("fs");
 const mnemonic = fs.readFileSync(".secret").toString().trim();
@@ -19,7 +20,7 @@ module.exports = {
       confirmations: 10,
       timeoutBlocks: 200,
       skipDryRun: true,
-      from: "0xf1dC223411e17B937F5e7C55dD6e1eE58b6e0B15"
+      from: process.env.address
     },
     bsc: {
       provider: () =>
