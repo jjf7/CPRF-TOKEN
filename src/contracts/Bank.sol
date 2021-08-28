@@ -9,13 +9,16 @@ contract Bank {
     uint public rate;
 
     Token public token;
-
-    event TokenPurchased(address indexed account, address indexed token, uint amount, uint rate);
-
+ 
     modifier onlyMinter(){
         require(msg.sender == minter);
         _;
     }
+
+    event TokenPurchased(address indexed account, address indexed token, uint amount, uint rate);
+
+    event MinterHasChange(address indexed from, address indexed to);
+    event Withdraw(address indexed owner, address indexed to, uint amount);
 
     constructor(Token _token){
         token = _token;
@@ -25,6 +28,19 @@ contract Bank {
 
     function setRate(uint _rate) public onlyMinter {
         rate = _rate;
+    }
+
+    function changeMinterAddress(address _minter) public onlyMinter { 
+        require(_minter != address(0)); 
+        minter = _minter;
+        emit MinterHasChange(minter, _minter);
+    }
+
+    function withdraw(address _to, uint amount) public onlyMinter {
+        require(address(this).balance >= amount);
+        require(_to != address(0));
+        payable(_to).transfer(amount);
+        emit Withdraw(address(this), _to, amount);
     }
 
     function buyTokens() public payable {

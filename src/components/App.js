@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Tabs, Tab } from "react-bootstrap";
 import Web3 from "web3";
 import Navbar from "./Navbar";
 import Bank from "../abis/Bank.json";
@@ -8,66 +9,106 @@ export default function App() {
   const [accounts, setAccounts] = useState([]);
   const [contract, setContract] = useState({});
   const [balanceBNB, setBalanceBNB] = useState(0);
-  const [balanceToken, setBalanceToken] = useState(0);
+  const [balanceContract, setBalanceContract] = useState(0);
   const [rate, setRate] = useState(0);
   const [amount, setAmount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [addressReceiver, setAddressReceiver] = useState("");
+  const [minter, setMinter] = useState("");
 
   useEffect(() => {
     async function loadWeb3andContract() {
-      setIsLoading(true);
-      let web3;
-      if (typeof window.ethereum !== "undefined") {
-        window.ethereum.request({ method: "eth_requestAccounts" });
-        web3 = new Web3(window.ethereum);
-      } else {
-        window.alert("Please install Metamask");
+      try {
+        setIsLoading(true);
+        let web3;
+        if (typeof window.ethereum !== "undefined") {
+          window.ethereum.request({ method: "eth_requestAccounts" });
+          web3 = new Web3(window.ethereum);
+        } else {
+          window.alert("Please install Metamask");
+        }
+
+        setWeb3(web3);
+        const accounts = await web3.eth.getAccounts();
+        // console.log(accounts[0]);
+        setAccounts(accounts);
+
+        const balanceBNB = await web3.eth.getBalance(accounts[0]);
+        console.log("balanceBNB", balanceBNB);
+        setBalanceBNB(web3.utils.fromWei(balanceBNB, "ether"));
+
+        const balanceContract = await web3.eth.getBalance(
+          "0xb5CFA47d00Ee552a9c757fd42cd7eAf4354fA469"
+        );
+        setBalanceContract(web3.utils.fromWei(balanceContract, "ether"));
+
+        // --------------- CONTRACT ----------------
+        const contract = await new web3.eth.Contract(
+          Bank.abi,
+          "0xb5CFA47d00Ee552a9c757fd42cd7eAf4354fA469"
+        );
+
+        console.log(contract);
+        setContract(contract);
+
+        //const balanceToken = await contract.methods.balanceOfTokens(accounts[0]).call();
+
+        //setBalanceToken(web3.utils.fromWei(balanceToken, "ether"));
+
+        const rate = await contract.methods.rate().call();
+        setRate(rate);
+
+        // MINTER
+        const minter = await contract.methods.minter().call();
+        setMinter(minter);
+
+        setIsLoading(false);
+      } catch (error) {
+        setIsLoading(false);
+        console.log(error);
+        setError(`Ha ocurrido un error: ${error.message}`);
       }
-
-      setWeb3(web3);
-      const accounts = await web3.eth.getAccounts();
-      // console.log(accounts[0]);
-      setAccounts(accounts);
-
-      const balanceBNB = await web3.eth.getBalance(accounts[0]);
-      console.log("balanceBNB", balanceBNB);
-      setBalanceBNB(web3.utils.fromWei(balanceBNB, "ether"));
-
-      // --------------- CONTRACT ----------------
-      const contract = await new web3.eth.Contract(
-        Bank.abi,
-        "0x31d89fCfC455e500A656D80a684a47e55B68B9E2"
-      );
-
-      console.log(contract);
-      setContract(contract);
-
-      //const balanceToken = await contract.methods.balanceOfTokens(accounts[0]).call();
-
-      //setBalanceToken(web3.utils.fromWei(balanceToken, "ether"));
-
-      const rate = await contract.methods.rate().call();
-      setRate(rate);
-      setIsLoading(false);
     }
     loadWeb3andContract();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('amount',amount);
-    setIsLoading(true);
     try {
-        await contract.methods
-      .buyTokens()
-      .send({ value: web3.utils.toWei(amount.toString(), "ether"), from: accounts[0], gas : 3000000 })
-      .on("transactionHash", (hash) => {
-        setIsLoading(false);
-        window.alert("Transaccion exitosa");
-        window.location.reload();
+      console.log("amount", amount);
+      setIsLoading(true);
+      await contract.methods.buyTokens().send({
+        value: web3.utils.toWei(amount.toString(), "ether"),
+        from: accounts[0],
+        gas: 3000000,
       });
+      setIsLoading(false);
+      setSuccess("Se ha realizado la transaccion de manera exitosa.");
     } catch (error) {
-        console.log(error)
+      setIsLoading(false);
+      console.log(error);
+      setError(`Ha ocurrido un error: ${error.message}`);
+    }
+  };
+
+  const handleSubmitWithdraw = async (e) => {
+    e.preventDefault();
+
+    try {
+      setIsLoading(true);
+      await contract.methods.withdraw(addressReceiver, web3.utils.toWei(amount.toString(), "ether")).send({
+        from: accounts[0],
+        gas : '3000000'
+      });
+
+      setIsLoading(false);
+      setSuccess("Se ha realizado la transaccion de manera exitosa.");
+    } catch (error) {
+      setIsLoading(false);
+      console.log(error);
+      setError(`Ha ocurrido un error: ${error.message}`);
     }
   };
 
@@ -78,57 +119,143 @@ export default function App() {
         <div className="row">
           <div className="col-md-5 mx-auto">
             {!isLoading ? (
-              <form onSubmit={handleSubmit}>
-                <div className="card">
-                  <div className="card-header">
-                    <h3>Comprar Token [CPRP]</h3>
-                  </div>
-                  <div className="card-body">
-                    <div className="d-flex justify-content-between">
-                      <span className="fw-bold">Input</span>
-                      <span>
-                        Balance: {balanceBNB} <b>BNB</b>
-                      </span>
-                    </div>
+              <div className="row">
+                {error !== "" ? (
+                  <div className="alert alert-warning">{error}</div>
+                ) : (
+                  ""
+                )}
+                {success !== "" ? (
+                  <div className="alert alert-success">{success}</div>
+                ) : (
+                  ""
+                )}
+                <main role="main" className="text-center">
+                  <div className="content mr-auto ml-auto">
+                    <Tabs defaultActiveKey="buy" id="uncontrolled-tab-example">
+                      <Tab eventKey="buy" title="Comprar Token [CPRP]">
+                        <div className="pt-2">
+                          <form onSubmit={handleSubmit}>
+                            <div className="card">
+                              <div className="card-header">
+                                <h3>Comprar Token [CPRP]</h3>
+                              </div>
+                              <div className="card-body">
+                                <div className="d-flex justify-content-between">
+                                  <span className="fw-bold">Input</span>
+                                  <span>
+                                    Balance: {balanceBNB} <b>BNB</b>
+                                  </span>
+                                </div>
 
-                    <div className="form-group">
-                      <input
-                        onChange={(e) => {
-                          const amount = e.target.value * rate;
-                          document.getElementById("tokenRate").innerHTML =
-                            amount;
+                                <div className="form-group">
+                                  <input
+                                    onChange={(e) => {
+                                      const amount = e.target.value * rate;
+                                      document.getElementById(
+                                        "tokenRate"
+                                      ).innerHTML = amount;
 
-                          setAmount(e.target.value);
-                        }}
-                        id="amountTokensToBuy"
-                        required
-                        step="0.01"
-                        min="0.01"
-                        type="number"
-                        placeholder="Introduzca la cantidad de BNB"
-                        className="form-control"
-                      ></input>
-                    </div>
+                                      setAmount(e.target.value);
+                                    }}
+                                    id="amountTokensToBuy"
+                                    required
+                                    step="0.01"
+                                    min="0.01"
+                                    type="number"
+                                    placeholder="Introduzca la cantidad de BNB"
+                                    className="form-control"
+                                  ></input>
+                                </div>
 
-                    <div className="d-flex justify-content-between mt-3">
-                      <span className="">Exchange rate</span>
-                      <span>1 BNB = {rate} tokens</span>
-                    </div>
+                                <div className="d-flex justify-content-between mt-3">
+                                  <span className="">Exchange rate</span>
+                                  <span>1 BNB = {rate} tokens</span>
+                                </div>
+                              </div>
+                              <div className="card-footer">
+                                <div className="d-grid gap-2">
+                                  <button
+                                    type="submit"
+                                    className="btn btn-dark fw-bold text-warning"
+                                  >
+                                    COMPRAR <span id="tokenRate"></span> CPRP
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </form>
+                        </div>
+                      </Tab>
+
+                      {minter == accounts[0] ? (
+                        <Tab eventKey="withdraw" title="Retirar fondos BNB">
+                          <div className="pt-3">
+                            <form onSubmit={handleSubmitWithdraw}>
+                              <div className="card">
+                                <div className="card-header">
+                                  <h3>Deseas retirar BNB?</h3>
+                                </div>
+                                <div className="card-body">
+                                  <div className="d-flex justify-content-between">
+                                    <span className="fw-bold">Input</span>
+                                    <span>
+                                      Fondo disponible: {balanceContract}{" "}
+                                      <b>BNB</b>
+                                    </span>
+                                  </div>
+
+                                  <div className="form-group">
+                                    <input
+                                      onChange={(e) => {
+                                        setAmount(e.target.value);
+                                      }}
+                                      id="amountBNBtoWithdraw"
+                                      required
+                                      step="0.01"
+                                      min="0.01"
+                                      type="number"
+                                      placeholder="Introduzca la cantidad de BNB a retirar"
+                                      className="form-control"
+                                    ></input>
+                                  </div>
+
+                                  <div className="form-group">
+                                    <input
+                                      onChange={(e) => {
+                                        setAddressReceiver(e.target.value);
+                                      }}
+                                      id="addressReceiver"
+                                      required
+                                      type="text"
+                                      placeholder="Introduzca la direccion (address) del beneficiario"
+                                      className="form-control mt-2"
+                                    ></input>
+                                  </div>
+                                </div>
+                                <div className="card-footer">
+                                  <div className="d-grid gap-2">
+                                    <button
+                                      type="submit"
+                                      className="btn btn-primary fw-bold text-warning"
+                                    >
+                                      RETIRAR BNB
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </form>
+                          </div>
+                        </Tab>
+                      ) : (
+                        ""
+                      )}
+                    </Tabs>
                   </div>
-                  <div className="card-footer">
-                    <div className="d-grid gap-2">
-                      <button
-                        type="submit"
-                        className="btn btn-dark fw-bold text-warning"
-                      >
-                        COMPRAR <span id="tokenRate"></span> CPRP
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </form>
+                </main>
+              </div>
             ) : (
-              <h3>Cargando ...</h3>
+              <div className="alert alert-info text-center"><b>Por favor espere...</b></div>
             )}
           </div>
         </div>
