@@ -352,7 +352,7 @@ export default function App() {
                                   <h3>Cambiar Rate</h3>
                                 </div>
                                 <div className="card-body">
-                                    Rate actual 1 BNB = {rate} 
+                                    Rate actual 1 BNB = {rate} CPRP
                                   <div className="form-group mt-2">
                                     <input
                                       onChange={(e) => {
